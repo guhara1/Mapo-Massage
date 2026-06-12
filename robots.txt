@@ -1,4 +1,11 @@
+User-agent: Googlebot
+Allow: /
+
+User-agent: Yeti
+Allow: /
+
 User-agent: *
 Allow: /
 
-Sitemap: https://www.mapo-ganda.example.com/sitemap.xml
+Sitemap: https://mapo-massage.pages.dev/sitemap.xml
+Sitemap: https://mapo-massage.pages.dev/rss.xml

@@ -1,6 +1,8 @@
 # 사이트 공통 설정
-# 배포 도메인 확정 후 BASE_URL 을 실제 도메인으로 변경하세요.
-BASE_URL = "https://www.mapo-ganda.example.com"
+BASE_URL = "https://mapo-massage.pages.dev"
+
+# IndexNow 인증 키 — 빌드 시 루트에 {키}.txt 파일이 생성된다.
+INDEXNOW_KEY = "64ef2045282b43688ef61f0b96d90ed2"
 
 BRAND = "간다 GO"
 PHONE = "0508-202-4719"

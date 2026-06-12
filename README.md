@@ -38,8 +38,25 @@ python3 build.py
 - 상단/하위 메뉴와 푸터에 키워드·지역명·역명 대량 나열 없음
 - 모든 페이지 본문은 페이지별 고유 작성 (지역명만 바꾼 복붙 없음)
 
-## 배포 전 해야 할 일
+## 색인 운영 (도메인: https://mapo-massage.pages.dev)
 
-1. `content/site.py`의 `BASE_URL`을 실제 도메인으로 변경
-2. `python3 build.py` 재실행 (canonical·sitemap·robots.txt에 반영됨)
-3. Google Search Console에 `sitemap.xml` 제출
+빌드 시 자동 생성: `sitemap.xml`(lastmod 포함) · `rss.xml`(매거진 피드) ·
+`robots.txt`(Googlebot/Yeti 명시 허용 + Sitemap 2줄) · IndexNow 키 파일.
+
+### 최초 1회
+1. **Google Search Console**: 속성 등록 → `sitemap.xml`·`rss.xml` 제출 →
+   "URL 검사 → 색인 생성 요청"으로 메인·허브 페이지 우선 요청
+2. **네이버 서치어드바이저**: 소유 확인(메인 메타 태그 등록됨) →
+   사이트맵 `sitemap.xml` + RSS `rss.xml` 제출 → "웹 페이지 수집 요청"으로 메인 요청
+
+### 콘텐츠 갱신 때마다
+```bash
+python3 build.py                          # lastmod·RSS 갱신
+python3 scripts/submit_indexnow.py        # 빙·네이버 등 IndexNow 즉시 통보
+python3 scripts/submit_google.py          # 구글 Search Console API 사이트맵 재제출
+```
+- IndexNow: 키 파일이 사이트 루트에 배포되므로 별도 준비 없음. 특정 URL만
+  통보하려면 `python3 scripts/submit_indexnow.py <URL>`
+- 구글: 핑 엔드포인트는 폐기되어 Search Console API 제출이 공식 경로.
+  서비스 계정 설정은 `scripts/submit_google.py` 상단 주석 참고.
+  Indexing API는 채용공고·라이브방송 전용이라 일반 페이지에는 쓰지 않는다.

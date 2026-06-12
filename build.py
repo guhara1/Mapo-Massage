@@ -8,6 +8,8 @@ content/ 패키지의 페이지 정의를 읽어 정적 HTML을 생성한다.
   - sitemap.xml 에는 index 허용 페이지만 포함
   - 지역+역+테마 조합 경로는 생성 자체가 불가능한 구조
 """
+import datetime
+import email.utils
 import html
 import os
 import re
@@ -17,10 +19,11 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from content import PAGES
-from content.site import (BASE_URL, BRAND, NAV, PHONE, PHONE_DISPLAY)
+from content.site import (BASE_URL, BRAND, INDEXNOW_KEY, NAV, PHONE, PHONE_DISPLAY)
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 MIN_INDEX_CHARS = 2000
+BUILD_DATE = datetime.date.today().isoformat()
 
 
 def text_length(body_html: str) -> int:
@@ -144,6 +147,7 @@ def render_page(page: dict) -> str:
 <meta name="description" content="{desc}">
 {robots}
 <link rel="canonical" href="{canonical}">
+<link rel="alternate" type="application/rss+xml" title="{BRAND} 매거진" href="{BASE_URL}/rss.xml">
 <meta property="og:type" content="website">
 <meta property="og:title" content="{title}">
 <meta property="og:description" content="{desc}">
@@ -268,9 +272,10 @@ def build() -> None:
             sitemap_urls.append(BASE_URL.rstrip("/") + "/" + path)
         report.append((path or "/", chars, "noindex" if noindex else "index"))
 
-    # sitemap.xml
+    # sitemap.xml (lastmod 포함 — 검색엔진이 변경 페이지를 빠르게 식별)
     urls = "\n".join(
-        f"  <url><loc>{u}</loc></url>" for u in sitemap_urls
+        f"  <url><loc>{u}</loc><lastmod>{BUILD_DATE}</lastmod></url>"
+        for u in sitemap_urls
     )
     with open(os.path.join(ROOT, "sitemap.xml"), "w", encoding="utf-8") as f:
         f.write(
@@ -279,11 +284,55 @@ def build() -> None:
             f"{urls}\n</urlset>\n"
         )
 
-    # robots.txt
+    # rss.xml — 매거진 아티클 피드 (네이버 서치어드바이저 RSS 제출용)
+    posts = sorted(
+        (p for p in PAGES if p.get("date")),
+        key=lambda p: p["date"], reverse=True,
+    )
+    now_rfc822 = email.utils.format_datetime(
+        datetime.datetime.now(datetime.timezone.utc))
+    items = []
+    for p in posts:
+        link = BASE_URL.rstrip("/") + "/" + p["path"]
+        pub = email.utils.format_datetime(datetime.datetime(
+            *map(int, p["date"].split("-")), 9, 0,
+            tzinfo=datetime.timezone(datetime.timedelta(hours=9))))
+        items.append(
+            "  <item>\n"
+            f"    <title>{html.escape(p['h1'])}</title>\n"
+            f"    <link>{link}</link>\n"
+            f"    <guid isPermaLink=\"true\">{link}</guid>\n"
+            f"    <description>{html.escape(p['desc'])}</description>\n"
+            f"    <pubDate>{pub}</pubDate>\n"
+            "  </item>"
+        )
+    with open(os.path.join(ROOT, "rss.xml"), "w", encoding="utf-8") as f:
+        f.write(
+            '<?xml version="1.0" encoding="UTF-8"?>\n'
+            '<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">\n'
+            "<channel>\n"
+            f"  <title>{html.escape(BRAND)} — 마포 출장마사지·홈타이 매거진</title>\n"
+            f"  <link>{BASE_URL}/</link>\n"
+            "  <description>마포구 방문 관리 이용 가이드와 마사지 정보 매거진</description>\n"
+            "  <language>ko</language>\n"
+            f"  <lastBuildDate>{now_rfc822}</lastBuildDate>\n"
+            f'  <atom:link href="{BASE_URL}/rss.xml" rel="self" type="application/rss+xml"/>\n'
+            + "\n".join(items) + "\n"
+            "</channel>\n</rss>\n"
+        )
+
+    # IndexNow 인증 키 파일 (Bing·Naver 즉시 색인 통보용)
+    with open(os.path.join(ROOT, f"{INDEXNOW_KEY}.txt"), "w", encoding="utf-8") as f:
+        f.write(INDEXNOW_KEY)
+
+    # robots.txt — 전체 허용 + 구글(Googlebot)·네이버(Yeti) 명시 허용
     with open(os.path.join(ROOT, "robots.txt"), "w", encoding="utf-8") as f:
         f.write(
+            "User-agent: Googlebot\nAllow: /\n\n"
+            "User-agent: Yeti\nAllow: /\n\n"
             "User-agent: *\nAllow: /\n\n"
             f"Sitemap: {BASE_URL.rstrip('/')}/sitemap.xml\n"
+            f"Sitemap: {BASE_URL.rstrip('/')}/rss.xml\n"
         )
 
     # .nojekyll (GitHub Pages)

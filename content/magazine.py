@@ -37,6 +37,7 @@ def _post(slug, h1, title, desc, date, body):
         "h1": h1,
         "body": f'<p class="post-meta"><time datetime="{date}">{date.replace("-", ". ")}</time> · 글 <a href="/about/">{BRAND} 편집팀</a> · 상담 실무 검수</p>' + body + _CTA,
         "breadcrumb": [("매거진", "/magazine/"), (h1, None)],
+        "date": date,
         "extra_head": _article_jsonld(slug, h1, desc, date),
     }
 
