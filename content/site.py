@@ -1,5 +1,5 @@
 # 사이트 공통 설정
-BASE_URL = "https://mapo-massage.pages.dev"
+BASE_URL = "https://mapo-massage.netlify.app"
 
 # IndexNow 인증 키 — 빌드 시 루트에 {키}.txt 파일이 생성된다.
 INDEXNOW_KEY = "64ef2045282b43688ef61f0b96d90ed2"

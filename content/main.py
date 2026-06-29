@@ -1,12 +1,16 @@
 # 메인 페이지 — 허브 역할. 모든 키워드를 밀어 넣지 않고 상세 페이지로 연결한다.
 from .site import BASE_URL, BRAND, PHONE, PHONE_DISPLAY
 from .pricing import PRICING
+from .reviews_data import agg_for, reviews_jsonld
 
-_JSONLD = f"""<meta name="naver-site-verification" content="fb1cafce5b068605ded34aaa4b41b01c144c3314" />
+_AGG = agg_for("main")
+
+_JSONLD = f"""<meta name="naver-site-verification" content="19c716456849c4a7de7d29974f05e5f2a37b7779" />
 <script type="application/ld+json">
 {{
   "@context": "https://schema.org",
   "@type": "HealthAndBeautyBusiness",
+  "@id": "{BASE_URL}/#business",
   "name": "{BRAND}",
   "telephone": "{PHONE}",
   "url": "{BASE_URL}/",
@@ -17,7 +21,15 @@ _JSONLD = f"""<meta name="naver-site-verification" content="fb1cafce5b068605ded3
     "name": "서울특별시 마포구"
   }},
   "openingHours": "Mo-Su 00:00-24:00",
-  "priceRange": "₩90,000 - ₩180,000"
+  "priceRange": "₩90,000 - ₩180,000",
+  "aggregateRating": {{
+    "@type": "AggregateRating",
+    "ratingValue": "{_AGG['ratingValue']}",
+    "reviewCount": "{_AGG['reviewCount']}",
+    "bestRating": "5",
+    "worstRating": "1"
+  }},
+  "review": {reviews_jsonld("main")}
 }}
 </script>
 <script type="application/ld+json">
@@ -206,6 +218,52 @@ _BODY = f"""
 <div class="faq-item">
 <h3>테마별 관리는 어디에서 확인하나요?</h3>
 <p>스웨디시, 타이마사지, 홈케어 등 테마별 안내 페이지에서 특징과 추천 대상을 확인할 수 있습니다.</p>
+</div>
+</section>
+
+<section id="quicklinks">
+<h2>상황별·주제별 빠른 찾기</h2>
+<p>찾으시는 상황이 분명하다면 아래에서 바로 이동하세요. 자주 찾는 지역·역세권·관리 유형과 이용 정보를 롱테일 주제별로 모았습니다.</p>
+<div class="quicklink-cols">
+<div class="quicklink-col">
+<h3>지역으로 찾기</h3>
+<ul>
+<li><a href="/mapo-gu/gongdeok-dong/">공덕동 출장마사지·홈타이 안내</a></li>
+<li><a href="/mapo-gu/hapjeong-dong/">합정동 방문 마사지 예약</a></li>
+<li><a href="/mapo-gu/mangwon-dong/">망원동 출장 홈타이 안내</a></li>
+<li><a href="/mapo-gu/seogyo-dong/">서교동 홍대 방문 관리</a></li>
+<li><a href="/mapo-gu/">마포구 전지역 지역별 안내</a></li>
+</ul>
+</div>
+<div class="quicklink-col">
+<h3>역세권으로 찾기</h3>
+<ul>
+<li><a href="/mapo-gu/stations/hongik-univ-station/">홍대입구역 숙소 출장마사지</a></li>
+<li><a href="/mapo-gu/stations/gongdeok-station/">공덕역 호텔 방문 마사지</a></li>
+<li><a href="/mapo-gu/stations/mapo-station/">마포역 인근 홈타이 예약</a></li>
+<li><a href="/mapo-gu/stations/">지하철역별 전체 안내</a></li>
+</ul>
+</div>
+<div class="quicklink-col">
+<h3>관리 유형으로 찾기</h3>
+<ul>
+<li><a href="/themes/swedish/">마포 스웨디시 방문 관리</a></li>
+<li><a href="/themes/thai/">홈타이·타이마사지 안내</a></li>
+<li><a href="/themes/24hours/">심야·24시간 출장마사지</a></li>
+<li><a href="/themes/couple/">커플 동시 방문 관리</a></li>
+<li><a href="/themes/aroma/">아로마테라피 휴식 관리</a></li>
+</ul>
+</div>
+<div class="quicklink-col">
+<h3>처음이라면</h3>
+<ul>
+<li><a href="/magazine/first-time-guide/">출장마사지 처음 이용 가이드</a></li>
+<li><a href="/magazine/swedish-vs-thai/">스웨디시 vs 타이마사지 비교</a></li>
+<li><a href="/courses/">코스·요금 한눈에 보기</a></li>
+<li><a href="/reviews/">실제 이용 후기 보기</a></li>
+<li><a href="/reservation/">예약 방법 안내</a></li>
+</ul>
+</div>
 </div>
 </section>
 
