@@ -372,6 +372,53 @@ strong { color: var(--gold-soft); font-weight: 700; }
   background: linear-gradient(180deg, #13203a, var(--panel-2));
 }
 
+/* 관련 안내 — 내부링크 강화 블록 (지역·역·테마 페이지 하단) */
+.related-links {
+  margin: 40px 0 8px; padding: 26px 28px;
+  background: linear-gradient(180deg, #0c1424, var(--panel));
+  border: 1px solid var(--line-gold); border-radius: 14px;
+}
+.related-title {
+  font-family: var(--serif); font-size: 1.12rem; color: var(--gold-soft);
+  margin: 0 0 16px; padding-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+}
+.related-title::before { content: "❖ "; color: var(--gold); font-size: 0.85em; }
+.related-grid {
+  display: grid; gap: 10px; list-style: none; margin: 0; padding: 0;
+  grid-template-columns: repeat(auto-fill, minmax(232px, 1fr));
+}
+.related-grid li { margin: 0; }
+.related-grid a {
+  display: block; padding: 13px 16px; border-radius: 10px;
+  background: var(--panel-2); border: 1px solid var(--line);
+  color: var(--text); font-size: 0.92rem; line-height: 1.45;
+  transition: 0.16s;
+}
+.related-grid a::before { content: "→ "; color: var(--gold); }
+.related-grid a:hover {
+  border-color: var(--gold); color: var(--gold-soft);
+  transform: translateX(2px);
+  background: linear-gradient(180deg, #13203a, var(--panel-2));
+}
+
+/* 메인 — 상황별·주제별 빠른 찾기 */
+.quicklink-cols {
+  display: grid; gap: 22px; margin: 22px 0 8px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+.quicklink-col h3 {
+  font-size: 0.98rem; color: var(--gold); margin: 0 0 12px;
+  padding-bottom: 8px; border-bottom: 1px solid var(--line-gold);
+}
+.quicklink-col ul { list-style: none; margin: 0; padding: 0; }
+.quicklink-col li { margin: 0 0 9px; }
+.quicklink-col a {
+  color: var(--text-dim); font-size: 0.9rem; line-height: 1.5;
+  transition: color 0.15s;
+}
+.quicklink-col a:hover { color: var(--gold-soft); }
+
 /* 안내 박스 */
 .info-box {
   background: var(--panel-2); border: 1px solid var(--line-gold);

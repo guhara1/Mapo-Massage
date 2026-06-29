@@ -4,8 +4,14 @@ Allow: /
 User-agent: Yeti
 Allow: /
 
+User-agent: Daum
+Allow: /
+
+User-agent: bingbot
+Allow: /
+
 User-agent: *
 Allow: /
 
-Sitemap: https://mapo-massage.pages.dev/sitemap.xml
-Sitemap: https://mapo-massage.pages.dev/rss.xml
+Sitemap: https://mapo-massage.netlify.app/sitemap.xml
+Sitemap: https://mapo-massage.netlify.app/rss.xml

@@ -38,10 +38,10 @@ python3 build.py
 - 상단/하위 메뉴와 푸터에 키워드·지역명·역명 대량 나열 없음
 - 모든 페이지 본문은 페이지별 고유 작성 (지역명만 바꾼 복붙 없음)
 
-## 색인 운영 (도메인: https://mapo-massage.pages.dev)
+## 색인 운영 (도메인: https://mapo-massage.netlify.app)
 
-빌드 시 자동 생성: `sitemap.xml`(lastmod 포함) · `rss.xml`(매거진 피드) ·
-`robots.txt`(Googlebot/Yeti 명시 허용 + Sitemap 2줄) · IndexNow 키 파일.
+빌드 시 자동 생성: `sitemap.xml`(lastmod·changefreq·priority 포함) · `rss.xml`(매거진 피드) ·
+`robots.txt`(Googlebot/Yeti/Daum/bingbot 명시 허용 + Sitemap 2줄) · IndexNow 키 파일.
 
 ### 최초 1회
 1. **Google Search Console**: 속성 등록 → `sitemap.xml`·`rss.xml` 제출 →

@@ -11,6 +11,7 @@ content/ 패키지의 페이지 정의를 읽어 정적 HTML을 생성한다.
 import datetime
 import email.utils
 import html
+import json
 import os
 import re
 import shutil
@@ -20,6 +21,8 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from content import PAGES
 from content.site import (BASE_URL, BRAND, INDEXNOW_KEY, NAV, PHONE, PHONE_DISPLAY)
+from content.reviews_data import agg_for, reviews_for
+from content import related as REL
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 MIN_INDEX_CHARS = 2000
@@ -107,6 +110,124 @@ def render_toc(items) -> str:
     )
 
 
+def _abs(path: str) -> str:
+    return BASE_URL.rstrip("/") + "/" + path.lstrip("/")
+
+
+def _ld(obj) -> str:
+    return ('<script type="application/ld+json">\n'
+            + json.dumps(obj, ensure_ascii=False, indent=2)
+            + "\n</script>\n")
+
+
+def _review_objs(key, n=3):
+    out = []
+    for author, rating, body in reviews_for(key, n):
+        out.append({
+            "@type": "Review",
+            "reviewRating": {"@type": "Rating", "ratingValue": str(rating),
+                             "bestRating": "5", "worstRating": "1"},
+            "author": {"@type": "Person", "name": author},
+            "reviewBody": body,
+        })
+    return out
+
+
+def _agg_obj(key):
+    a = agg_for(key)
+    return {"@type": "AggregateRating", "ratingValue": a["ratingValue"],
+            "reviewCount": a["reviewCount"], "bestRating": "5", "worstRating": "1"}
+
+
+def build_breadcrumb_ld(page, canonical):
+    crumbs = page.get("breadcrumb") or []
+    if not crumbs:
+        return ""
+    items = [{"@type": "ListItem", "position": 1, "name": "홈", "item": _abs("")}]
+    pos = 2
+    for label, href in crumbs:
+        item = _abs(href) if href else canonical
+        items.append({"@type": "ListItem", "position": pos, "name": label, "item": item})
+        pos += 1
+    return _ld({"@context": "https://schema.org", "@type": "BreadcrumbList",
+                "itemListElement": items})
+
+
+def build_service_ld(page, canonical):
+    """지역·역·테마 페이지에 Service + 평점 + 후기(+ 테마는 가격 Offer) 스키마를 부여한다."""
+    path = page["path"]
+    h1 = page["h1"]
+    desc = page["desc"]
+    m_area = re.fullmatch(r"mapo-gu/([a-z\-]+-dong)/", path)
+    m_station = re.fullmatch(r"mapo-gu/stations/([a-z\-]+)/", path)
+    m_theme = re.fullmatch(r"themes/([a-z0-9\-]+)/", path)
+
+    if m_area:
+        name = REL.AREA_NAME[m_area.group(1)]
+        area_served = {"@type": "Place", "name": f"서울특별시 마포구 {name}"}
+        svc_name = f"{name} 출장마사지·홈타이"
+    elif m_station:
+        name = REL.STATION_NAME[m_station.group(1)]
+        area_served = {"@type": "Place", "name": f"서울특별시 마포구 {name} 인근"}
+        svc_name = f"{name} 인근 출장마사지·홈타이"
+    elif m_theme:
+        name = REL.THEME_NAME[m_theme.group(1)]
+        area_served = {"@type": "AdministrativeArea", "name": "서울특별시 마포구"}
+        svc_name = f"마포 {name} 방문 관리"
+    else:
+        return ""
+
+    obj = {
+        "@context": "https://schema.org",
+        "@type": "Service",
+        "name": svc_name,
+        "serviceType": "출장마사지·홈타이 방문 관리",
+        "description": desc,
+        "url": canonical,
+        "provider": {
+            "@type": "HealthAndBeautyBusiness",
+            "@id": _abs("") + "#business",
+            "name": BRAND,
+            "telephone": PHONE,
+            "url": _abs(""),
+        },
+        "areaServed": area_served,
+        "aggregateRating": _agg_obj(path),
+        "review": _review_objs(path),
+    }
+    if m_theme:
+        obj["offers"] = {
+            "@type": "Offer",
+            "priceCurrency": "KRW",
+            "price": "90000",
+            "priceSpecification": {
+                "@type": "PriceSpecification",
+                "minPrice": "90000", "maxPrice": "180000", "priceCurrency": "KRW",
+            },
+            "availability": "https://schema.org/InStock",
+            "url": canonical,
+        }
+    return _ld(obj)
+
+
+def build_schema(page, canonical):
+    return build_breadcrumb_ld(page, canonical) + build_service_ld(page, canonical)
+
+
+def build_related(page) -> str:
+    path = page["path"]
+    m_area = re.fullmatch(r"mapo-gu/([a-z\-]+-dong)/", path)
+    m_station = re.fullmatch(r"mapo-gu/stations/([a-z\-]+)/", path)
+    m_theme = re.fullmatch(r"themes/([a-z0-9\-]+)/", path)
+    if m_area:
+        return REL.render_area_related(m_area.group(1))
+    if m_station and m_station.group(1) in REL.STATION_NAME:
+        return REL.render_station_related(m_station.group(1))
+    if m_theme and m_theme.group(1) in REL.THEME_NAME:
+        return REL.render_theme_related(m_theme.group(1))
+    return ""
+
+
 def render_page(page: dict) -> str:
     path = page["path"]
     title = page["title"]
@@ -125,6 +246,13 @@ def render_page(page: dict) -> str:
         else '<meta name="robots" content="index,follow">'
     )
     canonical = BASE_URL.rstrip("/") + "/" + path
+
+    # 페이지 유형별 구조화 데이터(JSON-LD) — 빵부스러기 + 서비스·평점·후기
+    schema_ld = build_schema(page, canonical)
+    extra_head = extra_head + schema_ld
+
+    # 본문 끝 내부링크 강화 블록(롱테일 교차 링크)
+    related_html = build_related(page)
 
     # 히어로가 있는 페이지(메인)는 H1을 히어로 안에서 출력한다.
     if hero:
@@ -190,6 +318,7 @@ def render_page(page: dict) -> str:
       {render_breadcrumb(crumbs)}
       {h1_html}
       {body}
+      {related_html}
     </article>
   </div>
 </main>
@@ -269,14 +398,33 @@ def build() -> None:
         chars = text_length(page["body"])
         noindex = page.get("noindex", False) or chars < MIN_INDEX_CHARS
         if not noindex:
-            sitemap_urls.append(BASE_URL.rstrip("/") + "/" + path)
+            sitemap_urls.append(path)
         report.append((path or "/", chars, "noindex" if noindex else "index"))
 
-    # sitemap.xml (lastmod 포함 — 검색엔진이 변경 페이지를 빠르게 식별)
-    urls = "\n".join(
-        f"  <url><loc>{u}</loc><lastmod>{BUILD_DATE}</lastmod></url>"
-        for u in sitemap_urls
-    )
+    # sitemap.xml — lastmod·changefreq·priority 로 우선순위와 신선도를 명시해
+    # 검색엔진이 핵심 페이지를 더 빠르게 식별·재크롤하도록 한다.
+    def _sm_meta(path):
+        hubs = {"", "massage/", "mapo-gu/", "mapo-gu/stations/", "themes/",
+                "courses/", "reservation/", "magazine/", "reviews/", "guide/", "support/"}
+        if path == "":
+            return "daily", "1.0"
+        if path in hubs:
+            return "weekly", "0.9"
+        if path.startswith("magazine/"):
+            return "weekly", "0.7"
+        if path.startswith("mapo-gu/") or path.startswith("themes/"):
+            return "weekly", "0.8"
+        return "monthly", "0.6"
+
+    rows = []
+    for path in sitemap_urls:
+        cf, pr = _sm_meta(path)
+        loc = BASE_URL.rstrip("/") + "/" + path
+        rows.append(
+            f"  <url><loc>{loc}</loc><lastmod>{BUILD_DATE}</lastmod>"
+            f"<changefreq>{cf}</changefreq><priority>{pr}</priority></url>"
+        )
+    urls = "\n".join(rows)
     with open(os.path.join(ROOT, "sitemap.xml"), "w", encoding="utf-8") as f:
         f.write(
             '<?xml version="1.0" encoding="UTF-8"?>\n'
@@ -325,11 +473,14 @@ def build() -> None:
     with open(os.path.join(ROOT, f"{INDEXNOW_KEY}.txt"), "w", encoding="utf-8") as f:
         f.write(INDEXNOW_KEY)
 
-    # robots.txt — 전체 허용 + 구글(Googlebot)·네이버(Yeti) 명시 허용
+    # robots.txt — 주요 검색엔진 크롤러 명시 허용 + 사이트맵 위치 고지.
+    #   Googlebot(구글), Yeti(네이버), Daum(다음/카카오), bingbot(빙)
     with open(os.path.join(ROOT, "robots.txt"), "w", encoding="utf-8") as f:
         f.write(
             "User-agent: Googlebot\nAllow: /\n\n"
             "User-agent: Yeti\nAllow: /\n\n"
+            "User-agent: Daum\nAllow: /\n\n"
+            "User-agent: bingbot\nAllow: /\n\n"
             "User-agent: *\nAllow: /\n\n"
             f"Sitemap: {BASE_URL.rstrip('/')}/sitemap.xml\n"
             f"Sitemap: {BASE_URL.rstrip('/')}/rss.xml\n"
